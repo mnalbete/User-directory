@@ -1,66 +1,108 @@
-import React from "react";
-import Header from "./components/Header";
-import Body from "./components/Body";
-// import testUsers from "./testData.json";
-import Filters from "./components/Filters";
-import API from "./utils/Api";
+import Jumbotron from "./components/jumbotron";
+import Form from "./components/form"
+import Table from "./components/table";
+import { useState, useEffect } from "react";
+import API from "./utils/API";
 
-class App extends React.Component {
-  state = {
-    users: [],
-    search: "",
+function App() {
+
+  const [employees, setEmployees] = useState("");
+
+  useEffect(() => {
+    console.log("useEffect() called!")
+    if (!employees) {
+      API
+        .getEmployees(20)
+        .then((data) => {
+          console.log("Data sent to setEmployees: ", data)
+          // sortBy(data, "firstName");
+          // filterBy(data, "gender", "female");
+          setEmployees(data);
+        })
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const sortBy = (column) => {
+    console.log("Before sortBy, data: ", employees)
+    console.log("Sorting by: ", column)
+
+    const sortedArray = employees.sort((employee, nextEmployee) => {
+      console.log("Sort Loop")
+      // Determine column type and sort accordingly
+      if (typeof employee[column] === "number") {
+
+        return employee[column] - nextEmployee[column]
+
+      } else if (typeof employee[column] === "string") {
+
+        const employeeStr = employee[column].toUpperCase();
+        const nextEmployeeStr = nextEmployee[column].toUpperCase();
+
+        if (employeeStr > nextEmployeeStr) {
+          return 1;
+        } else {
+          return -1;
+        }
+      }
+    });
+
+    console.log("sortedArray: ", sortedArray);
+
+    // setEmployees(sortedArray)
+
   };
 
-  componentDidMount() {
-    API.getUsers()
-      .then(res => {
-        this.setState({ users: res.data.results })
-        console.log(res)
-      })
-      .catch(err => console.log(err));
+  const filterBy = (filters) => {
+    console.log("filterBy employees state: ", employees);
+    let filteredArray = employees;
+    console.log("filters: ", filters)
+    filters.forEach(({ column, value }) => {
+
+      filteredArray = filteredArray.map(employee => {
+        console.log("Filter Loop")
+        if (employee[column] !== value) {
+          employee.hidden = true;
+        }
+
+        return employee;
+      });
+
+    });
+
+    setEmployees(filteredArray);
+
+    console.log("filteredArray: ", filteredArray);
   }
 
-  handleInputChange = event => {
-    const { name, value } = event.target;
-    this.setState({
-      [name]: value
-    })
-    
-  };
+  const clearFilters = (event) => {
+    console.log("clearFilters called.")
+    event.preventDefault()
 
-  handleFormSubmit = event => {
-    event.preventDefault();
-    console.log(this.state.users)
-    const currentStateUser=this.state.users.filter(user => user.name.last.toUpperCase().includes(this.state.search.toUpperCase()) )
-    this.setState({users: currentStateUser})
-  }; 
-
-  handleButtonLastNameSort = event => {
-    event.preventDefault();
-    const sortLast =this.state.users.sort((a,b) => a.name.last > b.name.last ? 1 : -1)
-    this.setState({users: sortLast})
-  };
-
-  handleButtonFirstNameSort = event => {
-    event.preventDefault();
-    const sortFirst =this.state.users.sort((a,b) => a.name.first > b.name.first ? 1 : -1)
-    this.setState({users: sortFirst})
-  };
-
-  render() {
-    return (
-      <div className="container">
-        <Header
-        search={this.state.search}
-        handleFormSubmit={this.handleFormSubmit}
-        handleInputChange={this.handleInputChange} />
-        <Filters 
-        handleButtonLastNameSort={this.handleButtonLastNameSort}
-        handleButtonFirstNameSort={this.handleButtonFirstNameSort} />
-        <Body users={this.state.users} />
-    </div>
+    setEmployees(
+      employees.map(employee => {
+        employee.hidden = false;
+        return employee;
+      })
     )
   }
-};
-export default App;
 
+  return (
+    <div>
+      <Jumbotron />
+      <div className="container">
+        <Form
+          clearFilters={clearFilters}
+          sortBy={sortBy}
+          filterBy={filterBy}
+        />
+        <Table
+          employeeData={employees}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default App;
