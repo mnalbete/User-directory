@@ -2,7 +2,7 @@ import Jumbotron from "./components/jumbotron";
 import Form from "./components/form"
 import Table from "./components/table";
 import { useState, useEffect } from "react";
-import API from "./utils/API";
+import API from "./utils/Api";
 
 function App() {
 
